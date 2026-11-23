@@ -164,7 +164,8 @@ const DB={
   if(j.error)throw new Error(j.error);
   if(j.users&&j.users.length){
    D=j;
-   this.lastRemote=JSON.stringify(j);
+   restoreCachedAvatars();
+   this.lastRemote=JSON.stringify(D);
   }else{
    D=seed();
    await this.push();
@@ -219,10 +220,11 @@ const DB={
    const j=await r.json();
    if(j.error)throw new Error(j.error);
    if(!j.users||!j.users.length)return;
-   const remote=JSON.stringify(j);
-   if(remote!==this.lastRemote){
+   const incoming=JSON.stringify(j);
+   if(incoming!==this.lastRemote){
     D=j;
-    this.lastRemote=remote;
+    restoreCachedAvatars();
+    this.lastRemote=JSON.stringify(D);
     this.pendingRender=true;
    }
    if(this.pendingRender){
@@ -260,6 +262,23 @@ const DB={
  },
  reset(){D=seed();this.save()}
 };
+// Keep technician profile photos locally when the remote refresh omits avatar.
+const AVATAR_CACHE_KEY='fixit_tech_avatars_v1';
+function readAvatarCache(){
+ try{return JSON.parse(localStorage.getItem(AVATAR_CACHE_KEY)||'{}')}catch(e){return {}}
+}
+function restoreCachedAvatars(){
+ const cache=readAvatarCache();
+ if(!Array.isArray(D.users))return;
+ D.users.forEach(u=>{
+  if(u.role==='technician'&&cache[u.id]&&!u.avatar)u.avatar=cache[u.id];
+ });
+ if(S.user){const fresh=D.users.find(u=>u.id==S.user.id);if(fresh)S.user=fresh;}
+}
+function cacheTechnicianAvatar(userId,data){
+ try{const cache=readAvatarCache();cache[userId]=data;localStorage.setItem(AVATAR_CACHE_KEY,JSON.stringify(cache));return true}
+ catch(e){console.warn('Avatar local cache error:',e);return false}
+}
 function seed(){
  const u=(id,name,email,role,phone)=>({id,name,email,role,phone,password:'1234',active:true});
  const users=[u(1,'ผู้ดูแลระบบ','admin@fixit.th','admin','081-000-0001'),
@@ -497,7 +516,7 @@ function saveAvatar(inp){
    canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
    const data=canvas.toDataURL('image/jpeg',0.78);
    const user=D.users.find(x=>x.id==S.user.id);
-   if(user){user.avatar=data;S.user=user;DB.save();draw();toast('✔ บันทึกรูปประจำตัวแล้ว')}
+   if(user){user.avatar=data;S.user=user;const cached=cacheTechnicianAvatar(user.id,data);DB.save();draw();toast(cached?'✔ บันทึกรูปประจำตัวแล้ว':'✔ แสดงรูปแล้ว แต่พื้นที่จัดเก็บในเบราว์เซอร์ไม่พอ')}
   };
   img.onerror=()=>alert('อ่านรูปภาพไม่สำเร็จ');
   img.src=reader.result;
