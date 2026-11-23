@@ -367,12 +367,12 @@ function strength(el){const p=el.value;let n=0;if(p.length>=6)n++;if(/[A-Z]/.tes
  const i=el.closest('.fld').querySelector('.sbar i');i.style.width=n*25+'%';i.style.background=['','var(--bad)','var(--warn)','var(--pri)','var(--ok)'][n]}
 function setReg(r){S.reg=r;$('af').innerHTML=formHTML();$('tabs').className='tabs'+(r?' r':'')}
 function formHTML(){return S.reg?
-`<div class="fld" style="--i:0"><label>👤 ชื่อ-นามสกุล</label><input id="rn" placeholder="เช่น สมชาย ใจดี"></div>
+`<div class="fld" style="--i:0"><label>👤 ชื่อ-นามสกุล</label><input id="rn" placeholder="เช่น ผมชอบ หีบทอง"></div>
 <div class="fld" style="--i:1"><label>✉️ อีเมล</label><input id="re" type="email" placeholder="name@email.com"><div class="hint" style="margin-top:4px">ใช้อีเมลจริงเพื่อรับเมลต้อนรับ · สามารถใช้ชื่อที่กรอกตอนสมัครเพื่อเข้าสู่ระบบได้</div></div>
 <div class="fld" style="--i:2"><label>📞 เบอร์โทรศัพท์</label><input id="rt" placeholder="08x-xxx-xxxx"></div>
 <div class="fld" style="--i:3"><label>🔒 รหัสผ่าน</label><div class="pw"><input id="rp" type="password" oninput="strength(this)"><button type="button" class="eye" onclick="eye('rp',this)">แสดง</button></div><div class="sbar"><i></i></div></div>
 <div id="aerr" class="aerr"></div><div class="fld" style="--i:4"><button class="btn cta" onclick="register()">สร้างบัญชีใหม่</button></div>`
-:`<div class="fld" style="--i:0"><label>👤 ชื่อ-นามสกุล ชื่อผู้ใช้ หรือ อีเมล</label><input id="em" type="text" autocapitalize="none" autocomplete="username" placeholder="กรอกชื่อที่ใช้สมัคร หรืออีเมล"></div>
+:`<div class="fld" style="--i:0"><label>👤 ชื่อผู้ใช้ หรือ อีเมล </label><input id="em" type="text" autocapitalize="none" autocomplete="username" placeholder="โปรดกรอกชื่อของท่าน "></div>
 <div class="fld" style="--i:1"><label>🔒 รหัสผ่าน</label><div class="pw"><input id="pw" type="password" onkeydown="if(event.key=='Enter')login()"><button type="button" class="eye" onclick="eye('pw',this)">แสดง</button></div></div>
 <div id="aerr" class="aerr"></div><div class="fld" style="--i:2"><button class="btn cta" onclick="login()">เข้าสู่ระบบ</button></div>`}
 function lpInit(){const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12});document.querySelectorAll('.rv').forEach(x=>io.observe(x))}
@@ -393,10 +393,10 @@ function authView(){const C=CONTACT;return `<div class="lp"><div class="lp-nav">
 <div class="lp-st rv" style="--i:0"><div class="lp-sn"><i>1</i><em>📝</em></div><b>กรอกข้อมูลและอาการเสีย</b><span>ระบุรายละเอียดอุปกรณ์ และอาการที่พบ</span></div><div class="lp-ar">➜</div>
 <div class="lp-st rv" style="--i:1"><div class="lp-sn"><i>2</i><em>🎫</em></div><b>รับเลขที่งานซ่อม</b><span>เมื่อส่งข้อมูลสำเร็จ จะได้รับเลขที่งานซ่อม</span></div><div class="lp-ar">➜</div>
 <div class="lp-st rv" style="--i:2"><div class="lp-sn"><i>3</i><em>✅</em></div><b>ติดตามผลซ่อม</b><span>ตรวจสอบสถานะได้ผ่านระบบ</span></div></div>
-<div class="lp-bn rv">👥 บริการสำหรับนักเรียน นักศึกษา และบุคลากร PICC</div></div>
+<div class="lp-bn rv">👥 บริการสำหรับนักเรียน นักศึกษา และบุคลากร วิทยาลัยการอาชีพปราจีนบุรี</div></div>
 <div class="lp-ft" id="lp-about"><div class="lp-w lp-fg"><div class="lp-fi rv" style="--i:0"><i>📞</i><div><b>ติดต่อหน่วยงาน IT</b><span>โทร. 037-212220<br></span></div></div>
 <div class="lp-fi rv" style="--i:1"><i>🕒</i><div><b>เวลาทำการ</b><span>${C.hours}<br>${C.off}</span></div></div>
-<div class="lp-fi rv" style="--i:2"><i>📍</i><div><b>วิทยาลัย PICC</b><span>${C.addr}<br>${C.addr2}</span></div></div></div></div></div>`}
+<div class="lp-fi rv" style="--i:2"><i>📍</i><div><b>วิทยาลัยการอาชีพปราจีนบุรี</b><span>${C.addr}<br>${C.addr2}</span></div></div></div></div></div>`}
 /* ===== Shell ===== */
 function draw(){const root=$('root');if(!S.user){root.innerHTML=authView();lpInit();return}
  const u=S.user,un=D.notifs.filter(n=>n.userId==u.id&&!n.read);
