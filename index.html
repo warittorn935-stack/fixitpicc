@@ -303,12 +303,12 @@ function toast(t){const e=document.createElement('div');e.className='toast';e.te
 const $=i=>document.getElementById(i),v=i=>($(i)||{}).value;
 const cost=r=>(+r.labor||0)+r.parts.reduce((a,p)=>a+(+p.price||0),0);
 const money=n=>'฿'+(+n).toLocaleString('th-TH');
-const fd=s=>s?new Date(s).toLocaleString('th-TH',{day:'numeric',month:'short',year:'2-digit',hour:s.length>10?'2-digit':undefined,minute:s.length>10?'2-digit':undefined}):'-';
+const fd=s=>{if(!s)return'-';const v=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)?s+'+07:00':s;return new Date(v).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'2-digit',hour:s.length>10?'2-digit':undefined,minute:s.length>10?'2-digit':undefined})}
 const bdg=s=>`<span class="bd ${ST[s][1]}${['checking','repairing','waiting_parts'].includes(s)?' live':''}">${ST[s][0]}</span>`;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const uname=id=>(D.users.find(u=>u.id==id)||{name:'— ยังไม่มอบหมาย —'}).name;
 const techs=()=>D.users.filter(u=>u.role=='technician'&&u.active);
-function notify(uid,text){const nid=Date.now()*1000+Math.floor(Math.random()*1000);D.notifs.unshift({id:nid,userId:uid,text,read:false,at:new Date().toISOString().slice(0,16)});D.seq.n=Math.max(D.seq.n,nid+1)}
+function notify(uid,text){const nid=Date.now()*1000+Math.floor(Math.random()*1000);D.notifs.unshift({id:nid,userId:uid,text,read:false,at:new Date().toISOString()});D.seq.n=Math.max(D.seq.n,nid+1)}
 const MENU={customer:[['dash','◧','แดชบอร์ด'],['new','＋','แจ้งซ่อมใหม่'],['list','☰','ประวัติแจ้งซ่อม'],['profile','☺','ข้อมูลส่วนตัว']],
  technician:[['dash','◧','แดชบอร์ด'],['list','☰','งานของฉัน'],['profile','☺','ข้อมูลส่วนตัว']],
  admin:[['dash','◧','ภาพรวมระบบ'],['list','☰','ใบแจ้งซ่อม'],['users','☻','จัดการผู้ใช้งาน'],['report','▤','รายงาน/สถิติ'],['profile','☺','ข้อมูลส่วนตัว']]};
@@ -450,7 +450,7 @@ function newForm(){const u=S.user;return `<h1>แจ้งซ่อมใหม�
 <label>อาการเสีย *</label><input id="n7"><label>รายละเอียดเพิ่มเติม</label><textarea id="n8" rows="3"></textarea>
 <label>อัปโหลดรูปภาพ (ไม่เกิน 400KB ต่อรูป)</label><input type="file" accept="image/*" multiple onchange="TMP=[];readImgs(this,d=>{TMP.push(d);$('pv').innerHTML+='<img src='+d+'>'})"><div class="imgs" id="pv" style="margin-top:8px"></div>
 <label>วันที่ต้องการนำเครื่องเข้าซ่อม</label><input id="n9" type="date"><br><button class="btn" onclick="submitNew()">ส่งใบแจ้งซ่อม</button></div>`}
-function setStatus(r,s,note){r.status=s;r.history.push({status:s,at:new Date().toISOString().slice(0,16),note:note||''})}
+function setStatus(r,s,note){r.status=s;r.history.push({status:s,at:new Date().toISOString(),note:note||''})}
 function submitNew(){if(!v('n7').trim()||!v('n4').trim())return alert('กรอกยี่ห้อและอาการเสีย');const id=Date.now(),no='JOB-2026-'+String(id).slice(-8);D.seq.r=Math.max(D.seq.r,id+1);
  const r={id,no,customerId:S.user.id,techId:null,name:v('n1'),phone:v('n2'),type:v('n3'),brand:v('n4'),model:v('n5'),serial:v('n6'),symptom:v('n7'),detail:v('n8'),images:TMP,before:[],after:[],date:v('n9'),createdAt:new Date().toISOString().slice(0,16),status:'new',diagnosis:'',cause:'',fix:'',parts:[],labor:0,note:'',history:[]};
  setStatus(r,'new','ลูกค้าส่งใบแจ้งซ่อม');D.repairs.push(r);D.users.filter(x=>x.role=='admin').forEach(a=>notify(a.id,'มีงานใหม่ '+no+' รอมอบหมายช่าง'));TMP=[];DB.save();go('detail',id);toast('✔ สร้างใบแจ้งซ่อมแล้ว: '+no);confetti()}
@@ -534,3 +534,4 @@ function csv(){const t='เลขที่งาน,ลูกค้า,อุป
 $('root').innerHTML='<div class="auth"><div class="card" style="text-align:center"><div class="spin"></div>โปรดรอสักครู่... </div></div>';
 DB.init().then(()=>{restore();draw();DB.startLive()}).catch(e=>{alert('ตั้งค่าหรือเชื่อมต่อ Supabase ไม่สำเร็จ: '+e.message);D=seed();draw()});
 </script></body></html>
+
