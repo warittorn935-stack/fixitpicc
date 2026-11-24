@@ -160,7 +160,7 @@ const LOGO='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AA
 const CONTACT={tel:'037-212220',hours:'จันทร์ - ศุกร์ เวลา 08:30 - 16:30 น.',off:'(ยกเว้นวันหยุดราชการ)',addr:'วิทยาลัยการอาชีพปราจีนบุรี',addr2:'จังหวัดปราจีนบุรี'}; // แก้ข้อมูลติดต่อตรงนี้
 const ST={new:['แจ้งซ่อม',''],accepted:['รับงาน',''],checking:['กำลังตรวจสอบ','w'],repairing:['กำลังซ่อม','w'],waiting_parts:['รออะไหล่','w'],done:['ซ่อมเสร็จ','ok'],returned:['ส่งคืน','ok'],cancelled:['ยกเลิก','x']};
 const TYPES=['โน้ตบุ๊ก','เดสก์ท็อป','จอภาพ','เครื่องพิมพ์','เครือข่าย/เราเตอร์','อื่น ๆ'];
-const API='https://script.google.com/macros/s/AKfycby9hF4GUAmOJ8czmgYe9hwqe-PaIVLw5daw4_uKgi0XqcKMXsn9j7g6uJfjGIWFg5aPyQ/exec',KEY='fix-picc67'; // ตั้งค่าตามคู่มือ
+const API='https://script.google.com/macros/s/AKfycbxReNRwZTUdm9FUPTnalXdb--lVzSna-_SThyyeqpJiQKjhlKoPHmdC6sCC8qiWNtGiVw/exec',KEY='warittornmontirayupin'; // ตั้งค่าตามคู่มือ
 const DB={
  t:null, poll:null, dirty:false, syncing:false, pendingRender:false,
  version:0, lastRemote:'',
@@ -171,7 +171,7 @@ const DB={
   const j=await r.json();
   if(j.error)throw new Error(j.error);
   if(j.users&&j.users.length){
-   D=j;
+   D=j;E
    restoreCachedAvatars();
    this.lastRemote=JSON.stringify(D);
   }else{
