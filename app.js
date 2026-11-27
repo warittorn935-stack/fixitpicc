@@ -328,7 +328,7 @@ function profile(){
   ? `<img class="profile-photo" id="avatarPreview" src="${esc(u.avatar)}" alt="รูปประจำตัว">`
   : `<div class="profile-photo" id="avatarPreview">${esc(initials)}</div>`;
  return `<h1>ข้อมูลส่วนตัว</h1><div class="card" style="max-width:650px"><div class="profile-layout">
- <div class="profile-photo-wrap"><div class="profile-avatar-preview">${preview}</div><div class="profile-avatar-controls"><label for="avatarFile">รูปประจำตัว</label><input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onchange="previewAvatar(this)"><div class="hint">รองรับ JPG, PNG, WEBP และ GIF ขนาดไม่เกิน 2 MB ระบบจะครอปเป็นรูปสี่เหลี่ยมและย่อให้อัตโนมัติ</div><div class="hint" id="avatarStatus" aria-live="polite"></div></div></div>
+ <div class="profile-photo-wrap"><div class="profile-avatar-preview">${preview}</div><div class="profile-avatar-controls"><label for="avatarFile">รูปประจำตัว</label><input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onchange="previewAvatar(this)"><div class="hint"></div><div class="hint" id="avatarStatus" aria-live="polite"></div></div></div>
  <div><label>ชื่อ</label><input id="f1" value="${esc(u.name)}"><label>เบอร์โทร</label><input id="f2" value="${esc(u.phone)}"><label>อีเมล</label><input value="${esc(u.email)}" disabled><label>รหัสผ่านใหม่ (เว้นว่างถ้าไม่เปลี่ยน)</label><input id="f3" type="password" autocomplete="new-password"><br><button class="btn" id="saveProfileBtn" onclick="saveProfile()">บันทึก</button></div>
  </div></div>`
 }
