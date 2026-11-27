@@ -74,23 +74,7 @@ const DB={
  reset(){const x=seed();D.repairs=x.repairs;D.notifs=x.notifs;D.seq=x.seq;this.save()}
 };
 
-// Keep technician profile photos locally when the remote refresh omits avatar.
-const AVATAR_CACHE_KEY='fixit_tech_avatars_v1';
-function readAvatarCache(){
- try{return JSON.parse(localStorage.getItem(AVATAR_CACHE_KEY)||'{}')}catch(e){return {}}
-}
-function restoreCachedAvatars(){
- const cache=readAvatarCache();
- if(!Array.isArray(D.users))return;
- D.users.forEach(u=>{
-  if(u.role==='technician'&&cache[u.id]&&!u.avatar)u.avatar=cache[u.id];
- });
- if(S.user){const fresh=D.users.find(u=>u.id==S.user.id);if(fresh)S.user=fresh;}
-}
-function cacheTechnicianAvatar(userId,data){
- try{const cache=readAvatarCache();cache[userId]=data;localStorage.setItem(AVATAR_CACHE_KEY,JSON.stringify(cache));return true}
- catch(e){console.warn('Avatar local cache error:',e);return false}
-}
+// Profile avatars are stored in Supabase Storage (avatars bucket), not localStorage.
 function seed(){
  const users=[
   {id:1,name:'ผู้ดูแลระบบ',email:'admin@fixit.th',role:'admin',phone:'081-000-0001',active:true},
@@ -336,35 +320,95 @@ function userModal(id){
 function saveU(id){const u=D.users.find(x=>x.id==id);if(!u)return;u.name=v('m1');u.phone=v('m3');u.role=v('m4');S.modal=null;DB.save();draw();toast('✔ บันทึกผู้ใช้แล้ว')}
 function toggleU(id){const u=D.users.find(x=>x.id==id);if(u.id==S.user.id)return alert('ปิดบัญชีตัวเองไม่ได้');u.active=!u.active;DB.save();draw();toast(u.active?'✔ เปิดบัญชีแล้ว':'ปิดบัญชีแล้ว')}
 function delU(id){const u=D.users.find(x=>x.id==id);if(!u)return;if(id==S.user.id)return alert('ปิดบัญชีตัวเองไม่ได้');if(confirm('ปิดใช้งานบัญชีนี้หรือไม่? งานซ่อมเดิมจะยังคงอยู่')){u.active=false;DB.save();draw();toast('ปิดบัญชีแล้ว')}}
-function profile(){const u=S.user,isTech=u.role==='technician';return `<h1>ข้อมูลส่วนตัว</h1><div class="card" style="max-width:650px"><div class="${isTech?'profile-layout':''}">
-${isTech?`<div class="profile-photo-wrap">${u.avatar?`<img class="profile-photo" src="${u.avatar}" alt="รูปประจำตัวช่าง">`:`<div class="profile-photo">${esc(String(u.name||'?').trim().charAt(0)||'?')}</div>`}<div><label>รูปประจำตัวช่าง</label><input type="file" accept="image/*" onchange="saveAvatar(this)" style="max-width:220px"><div class="hint">รูปจะถูกย่อให้พอดีอัตโนมัติ</div></div></div>`:''}
-<div><label>ชื่อ</label><input id="f1" value="${esc(u.name)}"><label>เบอร์โทร</label><input id="f2" value="${esc(u.phone)}"><label>อีเมล</label><input value="${esc(u.email)}" disabled><label>รหัสผ่านใหม่ (เว้นว่างถ้าไม่เปลี่ยน)</label><input id="f3" type="password"><br><button class="btn" onclick="saveProfile()">บันทึก</button></div>
-</div></div>`}
-async function saveProfile(){
- const u=D.users.find(x=>x.id===S.user.id);if(!u)return;u.name=v('f1');u.phone=v('f2');
- try{if(v('f3')){const {error}=await sb.auth.updateUser({password:v('f3')});if(error)throw error;}S.user=u;DB.save();draw();toast('✔ บันทึกข้อมูลแล้ว')}catch(e){alert('บันทึกไม่สำเร็จ: '+e.message)}
+let pendingAvatarFile=null;
+function profile(){
+ const u=S.user;
+ const initials=String(u.name||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'?';
+ const preview=u.avatar
+  ? `<img class="profile-photo" id="avatarPreview" src="${esc(u.avatar)}" alt="รูปประจำตัว">`
+  : `<div class="profile-photo" id="avatarPreview">${esc(initials)}</div>`;
+ return `<h1>ข้อมูลส่วนตัว</h1><div class="card" style="max-width:650px"><div class="profile-layout">
+ <div class="profile-photo-wrap"><div class="profile-avatar-preview">${preview}</div><div class="profile-avatar-controls"><label for="avatarFile">รูปประจำตัว</label><input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onchange="previewAvatar(this)" style="max-width:240px"><div class="hint">รองรับ JPG, PNG, WEBP และ GIF ขนาดไม่เกิน 2 MB ระบบจะครอปเป็นรูปสี่เหลี่ยมและย่อให้อัตโนมัติ</div><div class="hint" id="avatarStatus" aria-live="polite"></div></div></div>
+ <div><label>ชื่อ</label><input id="f1" value="${esc(u.name)}"><label>เบอร์โทร</label><input id="f2" value="${esc(u.phone)}"><label>อีเมล</label><input value="${esc(u.email)}" disabled><label>รหัสผ่านใหม่ (เว้นว่างถ้าไม่เปลี่ยน)</label><input id="f3" type="password" autocomplete="new-password"><br><button class="btn" id="saveProfileBtn" onclick="saveProfile()">บันทึก</button></div>
+ </div></div>`
 }
-function saveAvatar(inp){
- const f=inp.files&&inp.files[0];if(!f)return;
- if(!f.type.startsWith('image/'))return alert('กรุณาเลือกไฟล์รูปภาพ');
- if(f.size>8*1024*1024)return alert('รูปต้นฉบับต้องมีขนาดไม่เกิน 8MB');
+function previewAvatar(inp){
+ const f=inp.files&&inp.files[0];
+ if(!f){pendingAvatarFile=null;return;}
+ if(!['image/jpeg','image/png','image/webp','image/gif'].includes(f.type)){
+  inp.value='';pendingAvatarFile=null;alert('กรุณาเลือกไฟล์ JPG, PNG, WEBP หรือ GIF');return;
+ }
+ if(f.size>2*1024*1024){
+  inp.value='';pendingAvatarFile=null;alert('รูปต้นฉบับต้องมีขนาดไม่เกิน 2 MB');return;
+ }
+ pendingAvatarFile=f;
  const reader=new FileReader();
  reader.onload=()=>{
-  const img=new Image();
-  img.onload=()=>{
-   const canvas=document.createElement('canvas'),max=256;
-   const scale=Math.min(1,max/Math.max(img.width,img.height));
-   canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));
-   canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-   const data=canvas.toDataURL('image/jpeg',0.78);
-   const user=D.users.find(x=>x.id==S.user.id);
-   if(user){user.avatar=data;S.user=user;const cached=cacheTechnicianAvatar(user.id,data);DB.save();draw();toast(cached?'✔ บันทึกรูปประจำตัวแล้ว':'✔ แสดงรูปแล้ว แต่พื้นที่จัดเก็บในเบราว์เซอร์ไม่พอ')}
-  };
-  img.onerror=()=>alert('อ่านรูปภาพไม่สำเร็จ');
-  img.src=reader.result;
+  const el=$('avatarPreview');if(!el)return;
+  if(el.tagName==='IMG')el.src=reader.result;
+  else{const img=document.createElement('img');img.id='avatarPreview';img.className='profile-photo';img.alt='ตัวอย่างรูปประจำตัว';img.src=reader.result;el.replaceWith(img);}
+  const status=$('avatarStatus');if(status)status.textContent='เลือกรูปใหม่แล้ว กด “บันทึก” เพื่ออัปโหลด';
  };
- reader.onerror=()=>alert('อ่านไฟล์ไม่สำเร็จ');
+ reader.onerror=()=>alert('อ่านไฟล์รูปภาพไม่สำเร็จ');
  reader.readAsDataURL(f);
+}
+function makeAvatarBlob(file){
+ return new Promise((resolve,reject)=>{
+  const objectUrl=URL.createObjectURL(file),img=new Image();
+  img.onload=async()=>{
+   try{
+    const side=Math.min(img.naturalWidth,img.naturalHeight),sx=(img.naturalWidth-side)/2,sy=(img.naturalHeight-side)/2;
+    const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;
+    const ctx=canvas.getContext('2d');if(!ctx)throw new Error('เบราว์เซอร์ไม่รองรับการปรับรูปภาพ');
+    ctx.drawImage(img,sx,sy,side,side,0,0,512,512);
+    const toBlob=q=>new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(new Error('แปลงรูปภาพไม่สำเร็จ')),'image/jpeg',q));
+    let blob=await toBlob(0.86);
+    if(blob.size>2*1024*1024)blob=await toBlob(0.72);
+    if(blob.size>2*1024*1024)blob=await toBlob(0.58);
+    if(blob.size>2*1024*1024)throw new Error('รูปหลังปรับขนาดยังเกิน 2 MB กรุณาเลือกรูปอื่น');
+    resolve(blob);
+   }catch(e){reject(e)}finally{URL.revokeObjectURL(objectUrl)}
+  };
+  img.onerror=()=>{URL.revokeObjectURL(objectUrl);reject(new Error('เปิดไฟล์รูปภาพไม่สำเร็จ'))};
+  img.src=objectUrl;
+ });
+}
+async function uploadAvatarForCurrentUser(file,user){
+ const {data:{user:authUser},error:authError}=await sb.auth.getUser();
+ if(authError)throw authError;
+ if(!authUser)throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+ const blob=await makeAvatarBlob(file);
+ const path=`${authUser.id}/avatar.jpg`;
+ const {error:uploadError}=await sb.storage.from('avatars').upload(path,blob,{
+  contentType:'image/jpeg',upsert:true,cacheControl:'3600'
+ });
+ if(uploadError)throw uploadError;
+ const {data:{publicUrl}}=sb.storage.from('avatars').getPublicUrl(path);
+ const avatarUrl=publicUrl+(publicUrl.includes('?')?'&':'?')+'v='+Date.now();
+ const {data:updated,error:updateError}=await sb.from('profiles').update({avatar:avatarUrl})
+  .eq('id',Number(user.id)).eq('auth_user_id',authUser.id).eq('role',user.role).select('id').maybeSingle();
+ if(updateError)throw updateError;
+ if(!updated)throw new Error('อัปโหลดรูปแล้ว แต่ไม่สามารถบันทึก URL ใน profiles ได้ กรุณาตรวจสอบสิทธิ์ UPDATE (RLS)');
+ return avatarUrl;
+}
+async function saveProfile(){
+ const u=D.users.find(x=>x.id===S.user.id);if(!u)return;
+ const btn=$('saveProfileBtn');if(btn)btn.disabled=true;
+ const oldName=u.name,oldPhone=u.phone;
+ try{
+  const newName=v('f1'),newPhone=v('f2'),newPassword=v('f3');
+  if(pendingAvatarFile){
+   const avatarUrl=await uploadAvatarForCurrentUser(pendingAvatarFile,u);
+   u.avatar=avatarUrl;S.user.avatar=avatarUrl;pendingAvatarFile=null;
+  }
+  u.name=newName;u.phone=newPhone;S.user=u;
+  if(newPassword){const {error}=await sb.auth.updateUser({password:newPassword});if(error)throw error;}
+  DB.save();draw();toast('✔ บันทึกข้อมูลส่วนตัวแล้ว');
+ }catch(e){
+  u.name=oldName;u.phone=oldPhone;S.user=u;
+  if(btn)btn.disabled=false;
+  alert('บันทึกไม่สำเร็จ: '+(e.message||'กรุณาลองใหม่อีกครั้ง'));
+ }
 }
 /* ===== Report / schema ===== */
 function report(){const R=D.repairs.filter(r=>['done','returned'].includes(r.status));const by={};R.forEach(r=>{const k=r.techId;by[k]=by[k]||[0,0];by[k][0]++;by[k][1]+=cost(r)});

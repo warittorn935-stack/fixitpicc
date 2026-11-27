@@ -692,6 +692,27 @@ td {
 
 }
 
+.profile-photo-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.profile-avatar-preview {
+    flex: 0 0 auto;
+}
+
+.profile-avatar-controls {
+    min-width: 0;
+}
+
+.profile-avatar-controls input[type="file"] {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+}
+
 .profile-photo {
 
     width: 104px;
@@ -729,13 +750,14 @@ td {
     }
 
     .profile-photo-wrap {
-
         display: flex;
-
         align-items: center;
-
         gap: 12px;
+        flex-wrap: wrap;
+    }
 
+    .profile-avatar-controls {
+        flex: 1 1 180px;
     }
 
 }
