@@ -129,7 +129,7 @@ function toast(t){const e=document.createElement('div');e.className='toast';e.te
 const $=i=>document.getElementById(i),v=i=>($(i)||{}).value;
 const cost=r=>(+r.labor||0)+r.parts.reduce((a,p)=>a+(+p.price||0),0);
 const money=n=>'฿'+(+n).toLocaleString('th-TH');
-const fd=s=>{if(!s)return'-';const v=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)?s+'+07:00':s;return new Date(v).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'2-digit',hour:s.length>10?'2-digit':undefined,minute:s.length>10?'2-digit':undefined})}
+const fd=s=>{if(!s)return'-';const z=/([zZ]|[+-]\d{2}:?\d{2})$/.test(s);const v=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(s)&&!z?s+'+07:00':s;const d=new Date(v);if(isNaN(d))return esc(s);return d.toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'2-digit',hour:s.length>10?'2-digit':undefined,minute:s.length>10?'2-digit':undefined,hour12:false})}
 const bdg=s=>`<span class="bd ${ST[s][1]}${['checking','repairing','waiting_parts'].includes(s)?' live':''}">${ST[s][0]}</span>`;
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const uname=id=>(D.users.find(u=>u.id==id)||{name:'— ยังไม่มอบหมาย —'}).name;
@@ -181,7 +181,7 @@ function strength(el){const p=el.value;let n=0;if(p.length>=6)n++;if(/[A-Z]/.tes
  const i=el.closest('.fld').querySelector('.sbar i');i.style.width=n*25+'%';i.style.background=['','var(--bad)','var(--warn)','var(--pri)','var(--ok)'][n]}
 function setReg(r){S.reg=r;$('af').innerHTML=formHTML();$('tabs').className='tabs'+(r?' r':'')}
 function formHTML(){return S.reg?
-`<div class="fld" style="--i:0"><label>👤 ชื่อ-นามสกุล</label><input id="rn" placeholder="เช่น ผมชอบ หีบทอง"></div>
+`<div class="fld" style="--i:0"><label>👤 ชื่อ-นามสกุล</label><input id="rn" placeholder="เช่น วริทธิ์ธร นะครับ"></div>
 <div class="fld" style="--i:1"><label>✉️ อีเมล</label><input id="re" type="email" placeholder="name@email.com"><div class="hint" style="margin-top:4px">ใช้อีเมลจริงเพื่อรับเมลต้อนรับ · สามารถใช้ชื่อที่กรอกตอนสมัครเพื่อเข้าสู่ระบบได้</div></div>
 <div class="fld" style="--i:2"><label>📞 เบอร์โทรศัพท์</label><input id="rt" placeholder="08x-xxx-xxxx"></div>
 <div class="fld" style="--i:3"><label>🔒 รหัสผ่าน</label><div class="pw"><input id="rp" type="password" oninput="strength(this)"><button type="button" class="eye" onclick="eye('rp',this)">แสดง</button></div><div class="sbar"><i></i></div></div>
@@ -277,7 +277,7 @@ function newForm(){const u=S.user;return `<h1>แจ้งซ่อมใหม�
 <label>วันที่ต้องการนำเครื่องเข้าซ่อม</label><input id="n9" type="date"><br><button class="btn" onclick="submitNew()">ส่งใบแจ้งซ่อม</button></div>`}
 function setStatus(r,s,note){r.status=s;r.history.push({status:s,at:new Date().toISOString(),note:note||''})}
 function submitNew(){if(!v('n7').trim()||!v('n4').trim())return alert('กรอกยี่ห้อและอาการเสีย');const id=Date.now(),no='JOB-2026-'+String(id).slice(-8);D.seq.r=Math.max(D.seq.r,id+1);
- const r={id,no,customerId:S.user.id,techId:null,name:v('n1'),phone:v('n2'),type:v('n3'),brand:v('n4'),model:v('n5'),serial:v('n6'),symptom:v('n7'),detail:v('n8'),images:TMP,before:[],after:[],date:v('n9'),createdAt:new Date().toISOString().slice(0,16),status:'new',diagnosis:'',cause:'',fix:'',parts:[],labor:0,note:'',history:[]};
+const r={id,no,customerId:S.user.id,techId:null,name:v('n1'),phone:v('n2'),type:v('n3'),brand:v('n4'),model:v('n5'),serial:v('n6'),symptom:v('n7'),detail:v('n8'),images:TMP,before:[],after:[],date:v('n9'),createdAt:new Date().toISOString(),status:'new',diagnosis:'',cause:'',fix:'',parts:[],labor:0,note:'',history:[]};
  setStatus(r,'new','ลูกค้าส่งใบแจ้งซ่อม');D.repairs.push(r);D.users.filter(x=>x.role=='admin').forEach(a=>notify(a.id,'มีงานใหม่ '+no+' รอมอบหมายช่าง'));TMP=[];DB.save();go('detail',id);toast('✔ สร้างใบแจ้งซ่อมแล้ว: '+no);confetti()}
 /* ===== Detail ===== */
 function imgs(a){return a.length?`<div class="imgs">${a.map(s=>`<img src="${s}">`).join('')}</div>`:'<span class="hint">ไม่มีรูป</span>'}
